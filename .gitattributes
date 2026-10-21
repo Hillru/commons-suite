@@ -1,0 +1,4 @@
+# Preserve upstream license files verbatim, including their original whitespace.
+LICENSE -whitespace
+docs/licenses/** -whitespace
+docs/upstream-licenses/** -whitespace

@@ -190,9 +190,9 @@ final class CommonsSuite: NSObject, NSApplicationDelegate, NSWindowDelegate, WKN
         let alert = NSAlert(); alert.messageText = "Quit Commons Suite?"; alert.informativeText = "Save spreadsheet and presentation changes before quitting. Documents sync automatically while connected."; alert.addButton(withTitle: "Quit"); alert.addButton(withTitle: "Cancel")
         guard alert.runModal() == .alertFirstButtonReturn else { return .terminateCancel }
         quitting = true
-        let finish = { self.child?.terminate(); NSApp.reply(toApplicationShouldTerminate: true) }
-        if defaults.bool(forKey: "rememberSession") { saveSession(finish) } else { finish() }
+        let finish = { if let process = self.child, process.isRunning { process.terminate() }; NSApp.reply(toApplicationShouldTerminate: true) }
+        if defaults.bool(forKey: "rememberSession") { saveSession(finish) } else { DispatchQueue.main.async(execute: finish) }
         return .terminateLater
     }
-    func applicationWillTerminate(_ notification: Notification) { quitting = true; child?.terminate() }
+    func applicationWillTerminate(_ notification: Notification) { quitting = true; if let process = child, process.isRunning { process.terminate() } }
 }

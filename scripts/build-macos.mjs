@@ -72,7 +72,7 @@ for (const path of [
 run(
   "npm",
   ["ci", "--omit=dev", "--ignore-scripts", "--no-audit", "--no-fund"],
-  { cwd: app },
+  { cwd: app, env: { ...process.env, npm_config_cache: join(cache, "npm") } },
 );
 const licenses = join(resources, "licenses");
 mkdirSync(licenses, { recursive: true });

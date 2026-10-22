@@ -25,7 +25,7 @@
     "@fastify/rate-limit": "^10.3.0",
     "@fastify/static": "^10.1.7",
     "@hocuspocus/provider": "^3.0.0",
-    "@hocuspocus/server": "^3.0.0",
+    "@hocuspocus/server": "^4.7.1",
     "@tiptap/core": "^3.32.0",
     "@tiptap/extension-collaboration": "^3.0.0",
     "@tiptap/html": "^3.32.0",

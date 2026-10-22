@@ -1,6 +1,6 @@
 # GitHub launch checklist and copy
 
-Working repository name: commons-suite. Confirm the final namespace/name before publishing if a different name is desired. The project name has not undergone trademark clearance.
+Repository: https://github.com/Hillru/commons-suite (public). The project name has not undergone trademark clearance.
 
 ## Suggested repository description
 
@@ -18,15 +18,16 @@ This developer preview includes persistent storage, workspace accounts, file per
 
 It is not production enterprise software or an Office replacement for complex files. Compatibility limitations and a known moderate upstream dependency advisory are documented. Try it with non-sensitive data and help us prioritize the next phase.
 
-## Publish when account access is ready
+## Publish source and the first prerelease
 
 ```sh
 gh auth login
-gh repo create commons-suite --public --source=. --remote=origin --push
+git remote add origin https://github.com/Hillru/commons-suite.git
+git push -u origin main
 gh release create v0.1.0-alpha.1 --prerelease --title 'v0.1.0-alpha.1 — Developer preview' --notes-file docs/RELEASE_NOTES.md
 ```
 
-These commands are instructions, not a claim that the repository or release already exists. If the repo is created through a connector, verify its URL, default branch, visibility, and uploaded files.
+The repository was created through GitHub's website. Source upload and release creation must each be verified separately; repository creation alone does not publish the suite.
 
 ## Before public announcement
 
@@ -37,4 +38,4 @@ These commands are instructions, not a claim that the repository or release alre
 - Validate Docker deployment on a Docker-equipped machine.
 - Invite a small group of design partners. Ask for their top workflow and representative files they may legally share.
 
-The user can help by connecting GitHub, choosing a personal or organization namespace, and providing three representative non-sensitive Office files for the next compatibility pass.
+The user can help by providing three representative non-sensitive Office files for the next compatibility pass.

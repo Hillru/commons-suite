@@ -4,6 +4,8 @@
 
 Commons Suite is a free, Apache-2.0 licensed, self-hosted productivity-suite alpha. It combines collaborative writing, basic spreadsheets, simple presentations, and shared folders in one browser application.
 
+Repository: [Hillru/commons-suite](https://github.com/Hillru/commons-suite).
+
 **Status: developer preview, not production enterprise software. No Microsoft Office parity is claimed.** “Commons Suite” is a working name; trademark and domain clearance are pending.
 
 ![Commons Suite workspace](docs/preview-workspace.png)

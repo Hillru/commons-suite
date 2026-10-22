@@ -1,6 +1,18 @@
 import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "tests/browser",
+  projects: [
+    {
+      name: "chromium",
+      testMatch: "**/workspace.spec.ts",
+      use: { browserName: "chromium" },
+    },
+    {
+      name: "webkit",
+      testMatch: "**/webkit.spec.ts",
+      use: { browserName: "webkit" },
+    },
+  ],
   fullyParallel: false,
   workers: 1,
   timeout: 30000,

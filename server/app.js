@@ -61,9 +61,11 @@ export async function buildApp(
   const app = Fastify({ logger, bodyLimit: 2 * 1024 * 1024 });
   await app.register(cookie);
   await app.register(helmet, {
+    strictTransportSecurity: secure ? undefined : false,
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
+        upgradeInsecureRequests: secure ? [] : null,
         scriptSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:"],

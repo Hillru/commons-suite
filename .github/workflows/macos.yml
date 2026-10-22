@@ -20,6 +20,8 @@ jobs:
       - run: npm run licenses
       - run: npm run build:macos
       - run: npm run test:desktop
+      - run: npx playwright install webkit
+      - run: npx playwright test --project=webkit
       - name: Archive local development build
         run: |
           commons_arch=$(node -p process.arch)

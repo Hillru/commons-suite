@@ -113,7 +113,7 @@ final class CommonsSuite: NSObject, NSApplicationDelegate, NSWindowDelegate, WKN
         for field in [email, password, confirm] { field.frame.size = NSSize(width: 360, height: 26); field.widthAnchor.constraint(equalToConstant: 360).isActive = true; form.addArrangedSubview(field) }
         alert.accessoryView = form; alert.addButton(withTitle: "Create Workspace"); alert.addButton(withTitle: "Cancel")
         while true {
-            guard alert.runModal() == .alertFirstButtonReturn else { NSApp.terminate(nil); return }
+            guard alert.runModal() == .alertFirstButtonReturn else { quitting = true; if let process = child, process.isRunning { process.terminate() }; NSApp.terminate(nil); return }
             let address = email.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
             if address.range(of: #"^[^\s@]+@[^\s@]+\.[^\s@]+$"#, options: .regularExpression) != nil && password.stringValue.count >= 12 && password.stringValue.utf16.count <= 256 && password.stringValue == confirm.stringValue {
                 send(["email": address, "password": password.stringValue]); password.stringValue = ""; confirm.stringValue = ""; return
@@ -132,6 +132,9 @@ final class CommonsSuite: NSObject, NSApplicationDelegate, NSWindowDelegate, WKN
             } else { self.web.load(URLRequest(url: url)) }
         }
     }
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { if !quitting { fail("Could not open the workspace: \(error.localizedDescription)") } }
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) { if !quitting { fail("The workspace page could not load: \(error.localizedDescription)") } }
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) { if !quitting { fail("The workspace window stopped. Quit and reopen the app. Saved files remain in your workspace folder.") } }
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         guard let url = action.request.url else { decisionHandler(.cancel); return }
         if url.scheme == "about" || (url.scheme == origin?.scheme && url.host == origin?.host && url.port == origin?.port) {

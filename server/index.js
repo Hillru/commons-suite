@@ -67,7 +67,15 @@ const collaboration = new Server({
     persistDocument(store, documentName, document);
   },
 });
-await collaboration.listen();
+// Hocuspocus 3 passes `address` to Node's listen options. Node requires `host`;
+// using its wrapper would silently bind the collaboration port to every interface.
+await new Promise((resolveListen, rejectListen) => {
+  collaboration.httpServer.once("error", rejectListen);
+  collaboration.httpServer.listen({ port: collabPort, host }, () => {
+    collaboration.httpServer.removeListener("error", rejectListen);
+    resolveListen();
+  });
+});
 const collabUrl =
   process.env.COLLAB_URL ??
   (process.env.DESKTOP_MODE === "true"
@@ -99,7 +107,15 @@ if (existsSync(resolve("dist/index.html"))) {
 await app.listen({ port, host });
 if (process.env.DESKTOP_MODE === "true") {
   origin = `http://${host}:${app.server.address().port}`;
-  console.log(JSON.stringify({ type: "ready", url: origin, collabUrl }));
+  console.log(
+    JSON.stringify({
+      type: "ready",
+      url: origin,
+      collabUrl,
+      apiAddress: app.server.address().address,
+      collabAddress: collaboration.address.address,
+    }),
+  );
 }
 for (const signal of ["SIGINT", "SIGTERM"])
   process.on(signal, async () => {

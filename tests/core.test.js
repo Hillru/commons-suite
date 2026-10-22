@@ -292,3 +292,30 @@ test("API enforces session, origin, ownership, roles, export, revocation, and le
     s.db.close();
   }
 });
+
+test("local HTTP works in WebKit while HTTPS keeps upgrade and HSTS policies", async () => {
+  for (const secure of [false, true]) {
+    const store = createStore(":memory:");
+    const app = await buildApp(store, {
+      secure,
+      origin: secure ? "https://office.example.com" : "http://localhost:3000",
+    });
+    try {
+      const response = await app.inject({ url: "/api/health" });
+      assert.equal(response.statusCode, 200);
+      assert.equal(
+        response.headers["content-security-policy"].includes(
+          "upgrade-insecure-requests",
+        ),
+        secure,
+      );
+      assert.equal(
+        Boolean(response.headers["strict-transport-security"]),
+        secure,
+      );
+    } finally {
+      await app.close();
+      store.db.close();
+    }
+  }
+});

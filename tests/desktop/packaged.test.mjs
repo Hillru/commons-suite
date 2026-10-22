@@ -65,6 +65,12 @@ async function launch(bundle, dataDir, first) {
       ),
     ]);
     assert.equal(setup, first, "first-run setup appears exactly once");
+    assert.equal(message.apiAddress, "127.0.0.1");
+    assert.equal(
+      message.collabAddress,
+      "127.0.0.1",
+      "collaboration must bind loopback, never all interfaces",
+    );
     assert.match(message.url, /^http:\/\/127\.0\.0\.1:\d+$/);
     assert.match(message.collabUrl, /^ws:\/\/127\.0\.0\.1:\d+$/);
     let session = "";
@@ -120,6 +126,14 @@ async function launch(bundle, dataDir, first) {
     assert.equal(login.status, 200);
     session = login.headers.get("set-cookie").split(";")[0];
     assert.equal((await request("/me")).status, 200);
+    const headers = (await request("/health")).headers;
+    assert.equal(
+      headers
+        .get("content-security-policy")
+        .includes("upgrade-insecure-requests"),
+      false,
+    );
+    assert.equal(headers.has("strict-transport-security"), false);
     return {
       child,
       request,

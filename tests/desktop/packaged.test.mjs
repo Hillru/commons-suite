@@ -262,7 +262,18 @@ test(
             name: `Roundtrip.${format}`,
             data: bytes.toString("base64"),
           });
-          assert.equal(imported.status, 201, await imported.text());
+          assert.equal(imported.status, 201);
+          const roundtrip = await imported.json();
+          if (kind === "document")
+            assert.match(
+              roundtrip.file.content.html,
+              /Desktop persistence proof/,
+            );
+          else
+            assert.equal(
+              roundtrip.file.content.sheets[0].cells.B1,
+              "=SUM(A1:A2)",
+            );
         }
       }
       assert.equal(statSync(data).mode & 0o777, 0o700);

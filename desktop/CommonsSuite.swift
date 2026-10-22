@@ -3,7 +3,7 @@ import WebKit
 import Security
 
 @main
-final class CommonsSuite: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate {
+final class CommonsSuite: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate {
     var window: NSWindow!
     var web: WKWebView!
     var child: Process?
@@ -45,7 +45,7 @@ final class CommonsSuite: NSObject, NSApplicationDelegate, WKNavigationDelegate,
         web = WKWebView(frame: .zero, configuration: configuration)
         web.navigationDelegate = self; web.uiDelegate = self
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1180, height: 800), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
-        window.title = "Commons Suite"; window.contentView = web
+        window.delegate = self; window.title = "Commons Suite"; window.contentView = web
         window.minSize = NSSize(width: 800, height: 600)
         window.center(); window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
@@ -53,6 +53,8 @@ final class CommonsSuite: NSObject, NSApplicationDelegate, WKNavigationDelegate,
         launchBackend()
     }
     var workspace: URL {
+        // A separately identified QA bundle can isolate state without changing the user's workspace.
+        if Bundle.main.bundleIdentifier?.hasSuffix(".test") == true, let path = Bundle.main.object(forInfoDictionaryKey: "CommonsTestWorkspace") as? String { return URL(fileURLWithPath: path) }
         // Test builds can isolate state without changing the user's workspace.
         if let path = ProcessInfo.processInfo.environment["COMMONS_TEST_DATA_DIR"] { return URL(fileURLWithPath: path) }
         return FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Commons Suite", isDirectory: true)
@@ -164,10 +166,10 @@ final class CommonsSuite: NSObject, NSApplicationDelegate, WKNavigationDelegate,
     @objc func about() { let alert = NSAlert(); alert.messageText = "Commons Suite — Desktop Preview"; alert.informativeText = "Free, Apache-2.0 open-source productivity tools. Early preview; limited Office compatibility. Local workspace: \(workspace.path)\n\nDependency and Node.js licenses are included in Contents/Resources/licenses. This build is not notarized."; alert.runModal() }
     @objc func showWorkspace() { NSWorkspace.shared.open(workspace) }
     @objc func toggleRemember(_ sender: NSMenuItem) { let enabled = sender.state != .on; sender.state = enabled ? .on : .off; defaults.set(enabled, forKey: "rememberSession"); if enabled { saveSession() } else { deleteSession() } }
-    func deleteSession() { SecItemDelete([kSecClass: kSecClassGenericPassword, kSecAttrService: service, kSecAttrAccount: workspace.path] as CFDictionary) }
+    func deleteSession() { SecItemDelete([kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service, kSecAttrAccount as String: workspace.path] as CFDictionary) }
     func readSession() -> String? {
         var result: CFTypeRef?
-        let query: [CFString: Any] = [kSecClass: kSecClassGenericPassword, kSecAttrService: service, kSecAttrAccount: workspace.path, kSecReturnData: true, kSecMatchLimit: kSecMatchLimitOne]
+        let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service, kSecAttrAccount as String: workspace.path, kSecReturnData as String: true, kSecMatchLimit as String: kSecMatchLimitOne]
         guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess, let data = result as? Data else { return nil }
         return String(data: data, encoding: .utf8)
     }
@@ -175,12 +177,13 @@ final class CommonsSuite: NSObject, NSApplicationDelegate, WKNavigationDelegate,
         web.configuration.websiteDataStore.httpCookieStore.getAllCookies { cookies in
             self.deleteSession()
             if let value = cookies.first(where: { $0.name == "session" && $0.domain == "127.0.0.1" })?.value {
-                let entry: [CFString: Any] = [kSecClass: kSecClassGenericPassword, kSecAttrService: self.service, kSecAttrAccount: self.workspace.path, kSecValueData: Data(value.utf8), kSecAttrAccessible: kSecAttrAccessibleWhenUnlockedThisDeviceOnly]
+                let entry: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: self.service, kSecAttrAccount as String: self.workspace.path, kSecValueData as String: Data(value.utf8), kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly]
                 if SecItemAdd(entry as CFDictionary, nil) != errSecSuccess { self.fail("macOS could not remember this sign-in. You can still sign in normally next time.") }
             }
             completion()
         }
     }
+    func windowShouldClose(_ sender: NSWindow) -> Bool { NSApp.terminate(nil); return false }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         if quitting { return .terminateNow }

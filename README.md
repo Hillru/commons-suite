@@ -1,5 +1,7 @@
 # Commons Suite
 
+[![Verify](https://github.com/Hillru/commons-suite/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Hillru/commons-suite/actions/workflows/ci.yml)
+
 **An open workspace for documents, numbers, and ideas.**
 
 Commons Suite is a free, Apache-2.0 licensed, self-hosted productivity-suite alpha. It combines collaborative writing, basic spreadsheets, simple presentations, and shared folders in one browser application.

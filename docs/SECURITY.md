@@ -31,4 +31,4 @@ Track removal or an upstream fix before a production release. Do not “fix” t
 
 ## Reporting
 
-Do not put secrets or exploitable production details in a public issue. When the GitHub repository exists, enable private vulnerability reporting and document its link here. Until then, contact the repository maintainer through the project's established private channel. No security email address is invented.
+Do not put secrets or exploitable production details in a public issue. Private reporting is enabled: [report a vulnerability privately](https://github.com/Hillru/commons-suite/security/advisories/new). Include reproduction steps and affected versions without real credentials or customer data.

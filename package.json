@@ -22,7 +22,7 @@
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
     "@fastify/helmet": "^13.0.2",
-    "@fastify/rate-limit": "^10.3.0",
+    "@fastify/rate-limit": "^11.2.1",
     "@fastify/static": "^10.1.7",
     "@hocuspocus/provider": "^3.0.0",
     "@hocuspocus/server": "^3.0.0",

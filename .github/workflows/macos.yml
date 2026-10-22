@@ -28,7 +28,7 @@ jobs:
           mkdir -p .tmp/desktop-artifacts
           ditto -c -k --keepParent ".tmp/desktop-build/$commons_arch/Commons Suite.app" ".tmp/desktop-artifacts/Commons-Suite-development-$commons_arch.zip"
           cp ".tmp/desktop-build/$commons_arch/build-info.json" .tmp/desktop-artifacts/
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: macos-development-not-notarized
           path: .tmp/desktop-artifacts/

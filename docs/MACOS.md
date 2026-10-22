@@ -1,6 +1,6 @@
 # Standalone Mac desktop preview
 
-Status: implementation in development, not an App Store submission or a notarized public installer. Only call a build tested after its corresponding CI run passes. This remains an alpha with limited Office compatibility.
+Status: tested development preview; see [the candidate validation record](MACOS-VALIDATION.md). It is not an App Store submission or a notarized public installer. This remains an alpha with limited Office compatibility.
 
 ## What the app contains
 
@@ -31,7 +31,7 @@ The build is under `.tmp/desktop-build/arm64/Commons Suite.app`. A production-on
 
 The packaged-service integration test relocates the bundle to a path containing spaces, launches only its bundled runtime with a clean environment, creates a fresh workspace, checks unauthorized/local-origin requests, edits a document through its live collaboration connection, saves sheets and slides, exports DOCX/XLSX/PPTX, reimports DOCX/XLSX, restarts, and verifies a consistent pre-update backup. This test does not substitute for native-window, Keychain, and Save/Open dialog testing.
 
-`.github/workflows/macos.yml` builds and tests on a clean Apple-silicon Mac runner. Its artifact is explicitly a non-notarized development build with seven-day retention. The Linux workflow separately runs the five browser workflows. Never label these artifacts App Store ready.
+`.github/workflows/macos.yml` builds and tests on a clean Apple-silicon Mac runner. Its artifact is explicitly a non-notarized development build with seven-day retention. The Linux workflow separately runs five Chromium workflows and a WebKit workflow; the Mac workflow also runs the WebKit workflow. Never label these artifacts App Store ready.
 
 ## Updates and recovery
 

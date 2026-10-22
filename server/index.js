@@ -19,22 +19,14 @@ if (!store.db.prepare("SELECT id FROM users LIMIT 1").get()) {
     );
   store.createUser(process.env.ADMIN_EMAIL, process.env.ADMIN_PASSWORD, true);
 }
-const origin = process.env.PUBLIC_ORIGIN ?? "http://localhost:3000";
+let origin = process.env.PUBLIC_ORIGIN ?? "http://localhost:3000";
 const port = Number(process.env.PORT ?? 3000),
   host = process.env.HOST ?? "127.0.0.1";
 const collabPort = Number(process.env.COLLAB_PORT ?? 3001);
-const collabUrl =
-  process.env.COLLAB_URL ??
-  origin.replace(/^http/, "ws").replace(/:\d+$/, "") + ":" + collabPort;
-const app = await buildApp(store, {
-  origin,
-  secure: process.env.COOKIE_SECURE === "true",
-  collabUrl,
-  logger: true,
-});
 const collaboration = new Server({
   port: collabPort,
   address: host,
+  quiet: process.env.DESKTOP_MODE === "true",
   debounce: 500,
   maxDebounce: 2000,
   async onAuthenticate({ token, documentName, connectionConfig }) {
@@ -75,6 +67,21 @@ const collaboration = new Server({
     persistDocument(store, documentName, document);
   },
 });
+await collaboration.listen();
+const collabUrl =
+  process.env.COLLAB_URL ??
+  (process.env.DESKTOP_MODE === "true"
+    ? `ws://${host}:${collaboration.address.port}`
+    : origin.replace(/^http/, "ws").replace(/:\d+$/, "") +
+      ":" +
+      collaboration.address.port);
+const app = await buildApp(store, {
+  origin: () => origin,
+  secure: process.env.COOKIE_SECURE === "true",
+  collabUrl,
+  desktopToken: process.env.DESKTOP_TOKEN,
+  logger: process.env.DESKTOP_MODE !== "true",
+});
 app.revokeConnections = () => collaboration.hocuspocus.closeConnections();
 if (existsSync(resolve("dist/index.html"))) {
   await app.register(staticFiles, { root: resolve("dist"), wildcard: false });
@@ -90,7 +97,10 @@ if (existsSync(resolve("dist/index.html"))) {
       .send("Run npm run build, then restart the server."),
   );
 await app.listen({ port, host });
-await collaboration.listen();
+if (process.env.DESKTOP_MODE === "true") {
+  origin = `http://${host}:${app.server.address().port}`;
+  console.log(JSON.stringify({ type: "ready", url: origin, collabUrl }));
+}
 for (const signal of ["SIGINT", "SIGTERM"])
   process.on(signal, async () => {
     await collaboration.destroy();

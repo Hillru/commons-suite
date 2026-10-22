@@ -1,0 +1,33 @@
+name: Mac desktop preview
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  macos-preview:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run check
+      - run: npm run licenses
+      - run: npm run build:macos
+      - run: npm run test:desktop
+      - name: Archive local development build
+        run: |
+          commons_arch=$(node -p process.arch)
+          mkdir -p .tmp/desktop-artifacts
+          ditto -c -k --keepParent ".tmp/desktop-build/$commons_arch/Commons Suite.app" ".tmp/desktop-artifacts/Commons-Suite-development-$commons_arch.zip"
+          cp ".tmp/desktop-build/$commons_arch/build-info.json" .tmp/desktop-artifacts/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-development-not-notarized
+          path: .tmp/desktop-artifacts/
+          retention-days: 7

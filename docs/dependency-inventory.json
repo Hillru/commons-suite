@@ -1,6 +1,6 @@
 {
   "generatedFrom": "package-lock.json",
-  "lockfileSha256": "7c7551481b046d1f4036dd44c392bdcdd471f6c55abba2bb6f9c554dcb1648fe",
+  "lockfileSha256": "f44c8b5cc8e9d47744a85567c972ecdd8a7f90663b6ed91db46226d6bb3bd3f6",
   "packages": [
     {
       "name": "@esbuild/darwin-arm64",

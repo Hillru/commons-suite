@@ -95,3 +95,7 @@ The default Compose setup exposes only loopback ports. For a remote private pilo
 See [CONTRIBUTING](CONTRIBUTING.md), [architecture](docs/ARCHITECTURE.md), and [roadmap](docs/ROADMAP.md). Contributions stay under Apache-2.0. Preserve third-party notices; generated notices and a dependency inventory are in docs/.
 
 This project uses independently written application code and licensed open-source components. It is not affiliated with Microsoft and includes no Microsoft branding, proprietary code, or bundled proprietary fonts.
+
+## Standalone Mac preview
+
+A standalone Mac wrapper is under development. See [the desktop build and release guide](docs/MACOS.md) for build/test commands, local storage, license notices, and the Developer ID release gate. It is not yet a notarized public installer or App Store submission.

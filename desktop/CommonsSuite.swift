@@ -12,6 +12,8 @@ final class CommonsSuite: NSObject, NSApplicationDelegate, NSWindowDelegate, WKN
     var origin: URL?
     var token = ""
     var quitting = false
+    var downloads: [WKDownload] = []
+    var exporting = false
     let service = "org.commons-suite.desktop.session"
     let defaults = UserDefaults.standard
 
@@ -132,8 +134,14 @@ final class CommonsSuite: NSObject, NSApplicationDelegate, NSWindowDelegate, WKN
             } else { self.web.load(URLRequest(url: url)) }
         }
     }
-    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { if !quitting { fail("Could not open the workspace: \(error.localizedDescription)") } }
-    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) { if !quitting { fail("The workspace page could not load: \(error.localizedDescription)") } }
+    func navigationFailed(_ error: Error) {
+        let failure = error as NSError
+        // A download intentionally interrupts the page navigation; it is not a page failure.
+        if failure.code == NSURLErrorCancelled || (exporting && failure.domain == "WebKitErrorDomain" && failure.code == 102) { return }
+        if !quitting { fail("Could not open the workspace: \(error.localizedDescription)") }
+    }
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { navigationFailed(error) }
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) { navigationFailed(error) }
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) { if !quitting { fail("The workspace window stopped. Quit and reopen the app. Saved files remain in your workspace folder.") } }
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         guard let url = action.request.url else { decisionHandler(.cancel); return }
@@ -145,16 +153,23 @@ final class CommonsSuite: NSObject, NSApplicationDelegate, NSWindowDelegate, WKN
         }
     }
     func webView(_ webView: WKWebView, decidePolicyFor response: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
-        if let http = response.response as? HTTPURLResponse, http.value(forHTTPHeaderField: "Content-Disposition")?.lowercased().contains("attachment") == true { decisionHandler(.download) }
+        if let http = response.response as? HTTPURLResponse, http.value(forHTTPHeaderField: "Content-Disposition")?.lowercased().contains("attachment") == true { exporting = true; decisionHandler(.download) }
         else { decisionHandler(response.canShowMIMEType ? .allow : .download) }
     }
-    func webView(_ webView: WKWebView, navigationAction: WKNavigationAction, didBecome download: WKDownload) { download.delegate = self }
-    func webView(_ webView: WKWebView, navigationResponse: WKNavigationResponse, didBecome download: WKDownload) { download.delegate = self }
+    func webView(_ webView: WKWebView, navigationAction: WKNavigationAction, didBecome download: WKDownload) { exporting = true; downloads.append(download); download.delegate = self }
+    func webView(_ webView: WKWebView, navigationResponse: WKNavigationResponse, didBecome download: WKDownload) { exporting = true; downloads.append(download); download.delegate = self }
     func download(_ download: WKDownload, decideDestinationUsing response: URLResponse, suggestedFilename: String, completionHandler: @escaping (URL?) -> Void) {
         let panel = NSSavePanel(); panel.nameFieldStringValue = URL(fileURLWithPath: suggestedFilename).lastPathComponent
-        panel.beginSheetModal(for: window) { result in completionHandler(result == .OK ? panel.url : nil) }
+        panel.beginSheetModal(for: window) { result in
+            if result != .OK { self.downloads.removeAll { $0 === download }; self.exporting = !self.downloads.isEmpty }
+            completionHandler(result == .OK ? panel.url : nil)
+        }
     }
-    func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) { fail("Export could not be saved: \(error.localizedDescription)") }
+    func downloadDidFinish(_ download: WKDownload) { downloads.removeAll { $0 === download }; exporting = !downloads.isEmpty }
+    func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) {
+        downloads.removeAll { $0 === download }; exporting = !downloads.isEmpty
+        if (error as NSError).code != NSURLErrorCancelled { fail("Export could not be saved: \(error.localizedDescription)") }
+    }
     func webView(_ webView: WKWebView, runOpenPanelWith parameters: WKOpenPanelParameters, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping ([URL]?) -> Void) {
         let panel = NSOpenPanel(); panel.allowsMultipleSelection = parameters.allowsMultipleSelection; panel.canChooseDirectories = false
         panel.beginSheetModal(for: window) { result in completionHandler(result == .OK ? panel.urls : nil) }

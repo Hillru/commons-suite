@@ -325,6 +325,19 @@ test(
       db.close();
       await stop(running.child);
       running = null;
+      running = await launch(bundle, data, false);
+      const parentClosed = once(running.child, "exit");
+      running.child.stdin.end();
+      await Promise.race([
+        parentClosed,
+        new Promise((_, reject) =>
+          setTimeout(
+            () => reject(Error("Service outlived its owning app")),
+            5000,
+          ).unref(),
+        ),
+      ]);
+      running = null;
       console.log(
         "Verified bundled Node, fresh account, local capability, CSRF, DOCX/XLSX/PPTX export, DOCX/XLSX import, restart persistence, and pre-update SQLite backup.",
       );

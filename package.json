@@ -1,6 +1,6 @@
 {
   "name": "commons-suite",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "private": true,
   "type": "module",
   "license": "Apache-2.0",
@@ -14,7 +14,10 @@
     "test": "node --test tests/*.test.js",
     "check": "tsc --noEmit",
     "test:e2e": "playwright test",
-    "licenses": "node scripts/licenses.js"
+    "licenses": "node scripts/licenses.js",
+    "build:macos": "node scripts/build-macos.mjs",
+    "test:desktop": "node --test tests/desktop/*.test.mjs",
+    "release:macos": "node scripts/release-macos.mjs"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",

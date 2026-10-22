@@ -1,4 +1,8 @@
 import Fastify from "fastify";
+import { readFileSync } from "node:fs";
+const appVersion = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url)),
+).version;
 import cookie from "@fastify/cookie";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
@@ -51,14 +55,17 @@ export async function buildApp(
     secure = false,
     collabUrl = "ws://localhost:3001",
     logger = false,
+    desktopToken,
   } = {},
 ) {
   const app = Fastify({ logger, bodyLimit: 2 * 1024 * 1024 });
   await app.register(cookie);
   await app.register(helmet, {
+    strictTransportSecurity: secure ? undefined : false,
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
+        upgradeInsecureRequests: secure ? [] : null,
         scriptSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:"],
@@ -74,9 +81,19 @@ export async function buildApp(
   app.decorate("revokeConnections", () => {});
   app.addHook("onRequest", async (req, reply) => {
     if (
+      desktopToken &&
+      req.url.startsWith("/api/") &&
+      req.url.split("?")[0] !== "/api/health" &&
+      (typeof req.cookies.desktop !== "string" ||
+        hash(req.cookies.desktop) !== hash(desktopToken))
+    )
+      return reply
+        .code(403)
+        .send({ error: "Open this workspace in the desktop app" });
+    if (
       req.url.startsWith("/api/") &&
       !["GET", "HEAD"].includes(req.method) &&
-      req.headers.origin !== origin
+      req.headers.origin !== (typeof origin === "function" ? origin() : origin)
     )
       return reply.code(403).send({ error: "Invalid request origin" });
     req.user = store.authenticate(req.cookies.session);
@@ -89,12 +106,10 @@ export async function buildApp(
   });
   app.setErrorHandler((err, req, reply) => {
     if (err instanceof z.ZodError)
-      return reply
-        .code(400)
-        .send({
-          error: "Invalid input",
-          details: err.issues.map((i) => i.message),
-        });
+      return reply.code(400).send({
+        error: "Invalid input",
+        details: err.issues.map((i) => i.message),
+      });
     req.log.error(err);
     reply
       .code(err.statusCode && err.statusCode < 500 ? err.statusCode : 500)
@@ -114,7 +129,7 @@ export async function buildApp(
     return f;
   }
   const publicFile = (f, uid) => ({ ...f, role: store.role(f.id, uid) });
-  app.get("/api/health", () => ({ status: "ok", version: "0.1.0-alpha.1" }));
+  app.get("/api/health", () => ({ status: "ok", version: appVersion }));
   app.post(
     "/api/login",
     { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
@@ -253,18 +268,14 @@ export async function buildApp(
         store.db
           .prepare("INSERT INTO originals VALUES(?,?,?)")
           .run(f.id, b.name, Buffer.from(b.data, "base64"));
-        return reply
-          .code(201)
-          .send({
-            file: publicFile(f, req.user.id),
-            warnings: parsed.warnings,
-          });
+        return reply.code(201).send({
+          file: publicFile(f, req.user.id),
+          warnings: parsed.warnings,
+        });
       } catch {
-        return reply
-          .code(400)
-          .send({
-            error: "Import rejected. Use a basic DOCX or XLSX under 5 MB.",
-          });
+        return reply.code(400).send({
+          error: "Import rejected. Use a basic DOCX or XLSX under 5 MB.",
+        });
       }
     },
   );
@@ -336,11 +347,9 @@ export async function buildApp(
     const f = requireFile(req, reply, true);
     if (!f) return;
     if (!store.acquireLease(f.id, hash(req.cookies.session)))
-      return reply
-        .code(423)
-        .send({
-          error: "Another session is editing. Try again in 45 seconds.",
-        });
+      return reply.code(423).send({
+        error: "Another session is editing. Try again in 45 seconds.",
+      });
     return { ok: true, expiresIn: 45 };
   });
   app.patch("/api/files/:id", async (req, reply) => {
@@ -429,12 +438,10 @@ export async function buildApp(
     const f = requireFile(req, reply, true);
     if (!f) return;
     if (f.kind === "document")
-      return reply
-        .code(409)
-        .send({
-          error:
-            "Document restore is deferred until collaboration snapshots can be restored atomically.",
-        });
+      return reply.code(409).send({
+        error:
+          "Document restore is deferred until collaboration snapshots can be restored atomically.",
+      });
     const v = store.db
       .prepare("SELECT content FROM versions WHERE id=? AND file_id=?")
       .get(req.params.version, f.id);
